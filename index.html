@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexo Público — acompanhamento legislativo</title>
+<meta name="description" content="Painel de acompanhamento dos projetos de lei da Câmara Municipal de Florianópolis. Versão de demonstração com dados fictícios.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fundo:#F2F4F7;
+    --papel:#FFFFFF;
+    --tinta:#142033;
+    --tinta-2:#46556B;
+    --tinta-3:#6B7889;
+    --linha:#DDE2EA;
+    --marca:#1F4FA8;
+    --serie:#2a78d6;
+    --e1:#86b6ef; --e2:#5598e7; --e3:#2a78d6; --e4:#1c5cab; --e5:#9AA4B2;
+    --bom:#0F7A3A; --neutro:#6B7889;
+    --fonte:"Public Sans", system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--fundo);color:var(--tinta);font-family:var(--fonte);font-size:1rem;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--marca);text-underline-offset:3px}
+  :focus-visible{outline:3px solid var(--marca);outline-offset:2px;border-radius:4px}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+
+  .aviso{background:var(--tinta);color:#E6EBF2;font-size:.9rem;padding:10px 0}
+  .aviso strong{color:#fff}
+
+  header.topo{padding:40px 24px 32px}
+  .marca{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.15rem;letter-spacing:-.01em}
+  .marca svg{flex:none}
+  .local{color:var(--tinta-3);font-size:.95rem;margin-top:2px}
+  h1{font-size:clamp(2rem,4.6vw,3.2rem);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-top:28px;max-width:20ch}
+  .sub{color:var(--tinta-2);max-width:62ch;margin-top:14px;font-size:1.05rem}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--linha);border:1px solid var(--linha);border-radius:12px;overflow:hidden;margin-top:32px}
+  .kpi{background:var(--papel);padding:20px 22px}
+  .kpi .valor{font-size:2.2rem;font-weight:800;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+  .kpi .rotulo{color:var(--tinta-2);font-size:.92rem;margin-top:4px}
+
+  .filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:40px 0 20px}
+  .filtros label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:600;color:var(--tinta-2)}
+  .filtros select,.filtros input{font:inherit;font-size:.95rem;color:var(--tinta);background:var(--papel);border:1px solid #C5CDD8;border-radius:8px;padding:9px 12px;min-width:170px}
+  .filtros input{min-width:240px}
+  .limpar{font:inherit;font-size:.92rem;font-weight:600;color:var(--marca);background:none;border:none;padding:10px 4px;cursor:pointer}
+
+  .graficos{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .painel{background:var(--papel);border:1px solid var(--linha);border-radius:12px;padding:22px}
+  .painel h2{font-size:1.1rem;font-weight:700;letter-spacing:-.01em}
+  .painel .nota{color:var(--tinta-3);font-size:.88rem;margin:2px 0 16px}
+  .barras{display:flex;flex-direction:column;gap:10px}
+  .barra{display:grid;grid-template-columns:150px 1fr 32px;gap:12px;align-items:center;font-size:.92rem;cursor:default;position:relative}
+  .barra .trilho{height:18px;position:relative}
+  .barra .fill{height:100%;border-radius:0 4px 4px 0;min-width:2px}
+  .barra .n{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  .barra:hover .fill{filter:brightness(.92)}
+  .barra .nome{color:var(--tinta-2)}
+  .tip{position:fixed;pointer-events:none;background:var(--tinta);color:#fff;font-size:.85rem;padding:8px 10px;border-radius:6px;opacity:0;transition:opacity .1s;z-index:10;max-width:240px}
+
+  .lista{margin-top:20px}
+  .lista .cab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .lista .cab h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
+  .lista .cab span{color:var(--tinta-3);font-size:.92rem}
+  .pl{background:var(--papel);border:1px solid var(--linha);border-radius:12px;margin-bottom:10px}
+  .pl > button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:110px 1fr 150px 170px 70px;gap:16px;align-items:center;width:100%;padding:16px 20px;cursor:pointer}
+  .pl > button:focus-visible{outline:3px solid var(--marca);outline-offset:-3px;border-radius:12px}
+  .pl .num{font-weight:700;font-variant-numeric:tabular-nums}
+  .pl .tit{font-weight:600}
+  .pl .tit small{display:block;font-weight:400;color:var(--tinta-3);font-size:.88rem}
+  .pl .dias{text-align:right;color:var(--tinta-2);font-variant-numeric:tabular-nums;font-size:.92rem}
+  .etapa{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;font-weight:600}
+  .etapa i{width:10px;height:10px;border-radius:3px;flex:none}
+  .detalhe{display:none;border-top:1px solid var(--linha);padding:20px;grid-template-columns:1.2fr 1fr;gap:32px}
+  .pl.aberto .detalhe{display:grid}
+  .detalhe h3{font-size:.95rem;font-weight:700;margin-bottom:10px}
+  .resumo{background:#EEF3FB;border-radius:8px;padding:14px 16px;font-size:.95rem}
+  .resumo .selo{display:inline-block;font-size:.8rem;font-weight:700;color:var(--marca);margin-bottom:6px}
+  .linha-tempo{list-style:none;position:relative;padding-left:20px}
+  .linha-tempo::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--linha)}
+  .linha-tempo li{position:relative;margin-bottom:12px;font-size:.92rem}
+  .linha-tempo li::before{content:"";position:absolute;left:-19px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--papel);border:2px solid var(--serie)}
+  .linha-tempo li:last-child::before{background:var(--serie)}
+  .linha-tempo time{display:block;color:var(--tinta-3);font-size:.85rem;font-variant-numeric:tabular-nums}
+  .vazio{background:var(--papel);border:1px dashed #C5CDD8;border-radius:12px;padding:32px;text-align:center;color:var(--tinta-2)}
+
+  footer{padding:48px 0 64px;color:var(--tinta-3);font-size:.9rem}
+
+  @media (max-width:900px){
+    .kpis{grid-template-columns:1fr 1fr}
+    .graficos{grid-template-columns:1fr}
+    .pl > button{grid-template-columns:1fr auto;gap:6px 12px}
+    .pl .num{grid-column:1}
+    .pl .dias{grid-column:2;grid-row:1}
+    .pl .tit{grid-column:1 / -1}
+    .pl .autor{grid-column:1}
+    .pl .etapa-c{grid-column:2;grid-row:3}
+    .detalhe{grid-template-columns:1fr;gap:20px}
+    .barra{grid-template-columns:110px 1fr 28px}
+    .filtros label,.filtros select,.filtros input{width:100%;min-width:0}
+  }
+  @media (prefers-reduced-motion:reduce){.tip{transition:none}}
+</style>
+</head>
+<body>
+<div class="aviso"><div class="wrap"><strong>Versão de demonstração.</strong> Os projetos, vereadores e datas desta página são fictícios. A versão com dados reais da Câmara está em desenvolvimento.</div></div>
+
+<header class="topo wrap">
+  <div class="marca">
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="7" cy="14" r="4" fill="#1F4FA8"/><circle cx="21" cy="7" r="4" fill="#2a78d6"/><circle cx="21" cy="21" r="4" fill="#86b6ef"/><path d="M10.5 12.5 17.5 8.5M10.5 15.5 17.5 19.5" stroke="#142033" stroke-width="2" stroke-linecap="round"/></svg>
+    Nexo Público
+  </div>
+  <p class="local">Câmara Municipal de Florianópolis</p>
+  <h1>O que a Câmara está decidindo, em linguagem simples.</h1>
+  <p class="sub">Acompanhe cada projeto de lei: em que etapa está, há quanto tempo tramita e o que ele muda na cidade, com resumos gerados por IA.</p>
+
+  <div class="kpis" aria-live="polite">
+    <div class="kpi"><div class="valor" id="k-total"></div><div class="rotulo">projetos no filtro</div></div>
+    <div class="kpi"><div class="valor" id="k-tram"></div><div class="rotulo">em tramitação</div></div>
+    <div class="kpi"><div class="valor" id="k-aprov"></div><div class="rotulo">aprovados</div></div>
+    <div class="kpi"><div class="valor" id="k-dias"></div><div class="rotulo">dias em média até a decisão</div></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <form class="filtros" onsubmit="return false" aria-label="Filtros">
+    <label>Buscar<input type="search" id="f-busca" placeholder="Ex.: ciclovia, escola, mangue"></label>
+    <label>Tema<select id="f-tema"><option value="">Todos</option></select></label>
+    <label>Etapa<select id="f-etapa"><option value="">Todas</option></select></label>
+    <label>Autor<select id="f-autor"><option value="">Todos</option></select></label>
+    <button type="button" class="limpar" id="limpar">Limpar filtros</button>
+  </form>
+
+  <div class="graficos">
+    <section class="painel" aria-labelledby="g1">
+      <h2 id="g1">Onde os projetos estão</h2>
+      <p class="nota">Número de projetos por etapa atual</p>
+      <div class="barras" id="por-etapa"></div>
+    </section>
+    <section class="painel" aria-labelledby="g2">
+      <h2 id="g2">Temas em pauta</h2>
+      <p class="nota">Número de projetos por tema</p>
+      <div class="barras" id="por-tema"></div>
+    </section>
+  </div>
+
+  <section class="lista" aria-labelledby="t-lista">
+    <div class="cab"><h2 id="t-lista">Projetos de lei</h2><span id="contagem"></span></div>
+    <div id="itens"></div>
+  </section>
+</main>
+
+<footer class="wrap">
+  Nexo Público, um projeto de <a href="https://gustavo-marques-da-silva.github.io/Portfolio/">Gustavo Marques</a>. <a href="https://github.com/gustavo-marques-da-silva/nexo-publico">Código no GitHub</a>.
+</footer>
+
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+const HOJE = '2026-11-12';
+const ETAPAS = [
+  {id:'protocolado', nome:'Protocolado', cor:'var(--e1)'},
+  {id:'comissao', nome:'Em comissão', cor:'var(--e2)'},
+  {id:'plenario', nome:'Pronto para plenário', cor:'var(--e3)'},
+  {id:'aprovado', nome:'Aprovado', cor:'var(--e4)'},
+  {id:'arquivado', nome:'Arquivado', cor:'var(--e5)'}
+];
+const EVENTO = {protocolado:'Protocolado na Câmara', comissao:'Enviado às comissões', plenario:'Liberado para votação em plenário', aprovado:'Aprovado em plenário', arquivado:'Arquivado'};
+
+// Dados fictícios. d = datas de cada etapa alcançada, na ordem.
+const PLS = [
+ {n:'101/2026', t:'Ciclofaixas ligando os terminais de integração', tema:'Mobilidade', autor:'Lia Moraes', etapa:'comissao', d:['2026-03-04','2026-03-20'], r:'Cria um plano para conectar os terminais de ônibus por ciclofaixas em até quatro anos, com prioridade para os bairros com mais deslocamentos a pé e de bicicleta.'},
+ {n:'102/2026', t:'Programa municipal de jardins de chuva', tema:'Meio ambiente', autor:'Caio Prates', etapa:'aprovado', d:['2026-02-10','2026-02-25','2026-05-12','2026-06-03'], r:'Autoriza a prefeitura a instalar jardins de chuva em praças e canteiros para reduzir alagamentos, com manutenção feita em parceria com associações de moradores.'},
+ {n:'103/2026', t:'Horário estendido nas unidades básicas de saúde', tema:'Saúde', autor:'Rita Fontoura', etapa:'plenario', d:['2026-01-22','2026-02-05','2026-08-19'], r:'Determina que ao menos uma unidade de saúde por distrito funcione até as 22h em dias úteis.'},
+ {n:'104/2026', t:'Merenda com alimentos da agricultura familiar local', tema:'Educação', autor:'Davi Assunção', etapa:'aprovado', d:['2026-02-02','2026-02-18','2026-04-28','2026-05-20'], r:'Garante que ao menos 40% da merenda escolar venha de produtores da Grande Florianópolis.'},
+ {n:'105/2026', t:'Proteção das áreas de manguezal no Itacorubi', tema:'Meio ambiente', autor:'Nara Quintela', etapa:'comissao', d:['2026-04-15','2026-05-02'], r:'Proíbe novas construções em uma faixa de proteção ao redor do manguezal e prevê placas educativas nas trilhas.'},
+ {n:'106/2026', t:'Feira de artesanato permanente no centro histórico', tema:'Cultura', autor:'Otávio Brum', etapa:'arquivado', d:['2026-01-15','2026-02-01','2026-07-08'], r:'Propunha uma feira fixa de artesãos locais aos sábados. Foi arquivado após parecer contrário sobre o uso do espaço público.'},
+ {n:'107/2026', t:'Tarifa zero no transporte coletivo aos domingos', tema:'Mobilidade', autor:'Rita Fontoura', etapa:'comissao', d:['2026-05-06','2026-05-21'], r:'Isenta a tarifa de ônibus aos domingos e feriados, com custo coberto por fundo municipal de mobilidade.'},
+ {n:'108/2026', t:'Regras para aluguel de temporada por aplicativo', tema:'Urbanismo', autor:'Caio Prates', etapa:'plenario', d:['2026-03-11','2026-03-26','2026-09-30'], r:'Exige cadastro municipal de imóveis alugados por temporada e limita a quantidade de unidades por edifício residencial.'},
+ {n:'109/2026', t:'Atendimento psicológico nas escolas municipais', tema:'Educação', autor:'Lia Moraes', etapa:'aprovado', d:['2026-01-28','2026-02-12','2026-06-09','2026-07-01'], r:'Prevê ao menos um psicólogo para cada grupo de três escolas da rede municipal.'},
+ {n:'110/2026', t:'Coleta seletiva em todos os bairros até 2028', tema:'Meio ambiente', autor:'Davi Assunção', etapa:'protocolado', d:['2026-10-21'], r:'Estabelece metas anuais para ampliar a coleta seletiva até cobrir 100% dos bairros em 2028.'},
+ {n:'111/2026', t:'Calçadas acessíveis nas rotas escolares', tema:'Urbanismo', autor:'Nara Quintela', etapa:'comissao', d:['2026-06-02','2026-06-17'], r:'Obriga a adequação de calçadas no entorno de 300 metros das escolas, com rampas e piso tátil.'},
+ {n:'112/2026', t:'Semana municipal do patrimônio açoriano', tema:'Cultura', autor:'Otávio Brum', etapa:'aprovado', d:['2026-02-20','2026-03-05','2026-04-14','2026-04-29'], r:'Inclui no calendário oficial uma semana de atividades sobre a herança cultural açoriana.'},
+ {n:'113/2026', t:'Farmácia popular em terminais de ônibus', tema:'Saúde', autor:'Caio Prates', etapa:'protocolado', d:['2026-10-29'], r:'Autoriza pontos de retirada de medicamentos gratuitos nos terminais de integração.'},
+ {n:'114/2026', t:'Telhados verdes em novos prédios públicos', tema:'Meio ambiente', autor:'Lia Moraes', etapa:'plenario', d:['2026-04-08','2026-04-23','2026-10-14'], r:'Exige telhado verde ou captação de água da chuva em todos os novos prédios da prefeitura.'},
+ {n:'115/2026', t:'Vagas em creche por ordem de vulnerabilidade', tema:'Educação', autor:'Rita Fontoura', etapa:'comissao', d:['2026-07-07','2026-07-22'], r:'Cria critérios públicos de prioridade para as vagas em creches, considerando renda e situação familiar.'},
+ {n:'116/2026', t:'Linha de ônibus noturna para o sul da ilha', tema:'Mobilidade', autor:'Davi Assunção', etapa:'arquivado', d:['2026-02-14','2026-03-01','2026-08-26'], r:'Propunha uma linha noturna entre o centro e o sul da ilha. Foi arquivado porque a criação de linhas cabe ao Executivo.'},
+ {n:'117/2026', t:'Incentivo a hortas comunitárias em terrenos ociosos', tema:'Meio ambiente', autor:'Otávio Brum', etapa:'comissao', d:['2026-08-05','2026-08-20'], r:'Permite o uso temporário de terrenos públicos vazios para hortas geridas pela comunidade.'},
+ {n:'118/2026', t:'Teleconsulta para moradores das comunidades pesqueiras', tema:'Saúde', autor:'Nara Quintela', etapa:'protocolado', d:['2026-11-03'], r:'Cria pontos de teleconsulta nas comunidades pesqueiras com acesso difícil às unidades de saúde.'},
+ {n:'119/2026', t:'Limite de altura para prédios na orla norte', tema:'Urbanismo', autor:'Lia Moraes', etapa:'comissao', d:['2026-09-09','2026-09-24'], r:'Fixa em quatro pavimentos a altura máxima das construções em uma faixa da orla norte.'},
+ {n:'120/2026', t:'Edital anual para grupos culturais de bairro', tema:'Cultura', autor:'Caio Prates', etapa:'plenario', d:['2026-05-19','2026-06-03','2026-11-04'], r:'Cria um edital anual com recursos para grupos culturais que atuam fora do centro.'},
+ {n:'121/2026', t:'Bicicletários em escolas e unidades de saúde', tema:'Mobilidade', autor:'Nara Quintela', etapa:'aprovado', d:['2026-03-17','2026-04-01','2026-07-21','2026-08-12'], r:'Obriga a instalação de bicicletários em escolas e unidades de saúde da rede municipal.'},
+ {n:'122/2026', t:'Reforço escolar no contraturno', tema:'Educação', autor:'Otávio Brum', etapa:'protocolado', d:['2026-10-08'], r:'Oferece aulas de reforço em português e matemática no contraturno para alunos do ensino fundamental.'},
+ {n:'123/2026', t:'Monitoramento da balneabilidade em tempo real', tema:'Meio ambiente', autor:'Rita Fontoura', etapa:'comissao', d:['2026-09-15','2026-09-30'], r:'Determina a divulgação online e em placas nas praias dos resultados de balneabilidade, atualizados semanalmente.'},
+ {n:'124/2026', t:'Regularização de comércio em vias de pedestres', tema:'Urbanismo', autor:'Davi Assunção', etapa:'protocolado', d:['2026-11-06'], r:'Cria regras para mesas e cadeiras de bares e restaurantes em ruas exclusivas para pedestres.'}
+];
+
+const $ = id => document.getElementById(id);
+const dia = s => Date.parse(s + 'T12:00:00Z') / 864e5;
+const fmt = s => { const [a,m,d] = s.split('-'); return `${d}/${m}/${a}`; };
+const etapaDe = id => ETAPAS.find(e => e.id === id);
+const final = p => p.etapa === 'aprovado' || p.etapa === 'arquivado';
+const diasDe = p => Math.round((final(p) ? dia(p.d.at(-1)) : dia(HOJE)) - dia(p.d[0]));
+
+function preencher(sel, valores){ valores.forEach(v => { const o = document.createElement('option'); o.value = v.id || v; o.textContent = v.nome || v; sel.appendChild(o); }); }
+preencher($('f-tema'), [...new Set(PLS.map(p => p.tema))].sort());
+preencher($('f-etapa'), ETAPAS);
+preencher($('f-autor'), [...new Set(PLS.map(p => p.autor))].sort());
+
+const tip = $('tip');
+function dica(el, texto){
+  el.addEventListener('mousemove', e => { tip.textContent = texto; tip.style.opacity = 1; tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; });
+  el.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+}
+
+function barras(alvo, linhas, total){
+  const max = Math.max(1, ...linhas.map(l => l.n));
+  alvo.innerHTML = '';
+  linhas.forEach(l => {
+    const div = document.createElement('div');
+    div.className = 'barra';
+    div.innerHTML = `<span class="nome">${l.nome}</span><span class="trilho"><span class="fill" style="display:block;width:${l.n / max * 100}%;background:${l.cor}"></span></span><span class="n">${l.n}</span>`;
+    const pct = total ? Math.round(l.n / total * 100) : 0;
+    dica(div, `${l.nome}: ${l.n} ${l.n === 1 ? 'projeto' : 'projetos'} (${pct}% do filtro)`);
+    alvo.appendChild(div);
+  });
+}
+
+function filtrados(){
+  const b = $('f-busca').value.trim().toLowerCase(), t = $('f-tema').value, e = $('f-etapa').value, a = $('f-autor').value;
+  return PLS.filter(p => (!t || p.tema === t) && (!e || p.etapa === e) && (!a || p.autor === a) &&
+    (!b || (p.t + ' ' + p.r + ' ' + p.n).toLowerCase().includes(b)));
+}
+
+function render(){
+  const lista = filtrados();
+  $('k-total').textContent = lista.length;
+  $('k-tram').textContent = lista.filter(p => !final(p)).length;
+  $('k-aprov').textContent = lista.filter(p => p.etapa === 'aprovado').length;
+  const dec = lista.filter(final);
+  $('k-dias').textContent = dec.length ? Math.round(dec.reduce((s, p) => s + diasDe(p), 0) / dec.length) : '–';
+
+  barras($('por-etapa'), ETAPAS.map(e => ({nome:e.nome, cor:e.cor, n:lista.filter(p => p.etapa === e.id).length})), lista.length);
+  const temas = [...new Set(PLS.map(p => p.tema))].map(t => ({nome:t, cor:'var(--serie)', n:lista.filter(p => p.tema === t).length})).sort((x, y) => y.n - x.n || x.nome.localeCompare(y.nome));
+  barras($('por-tema'), temas, lista.length);
+
+  $('contagem').textContent = `${lista.length} de ${PLS.length}`;
+  const itens = $('itens');
+  itens.innerHTML = '';
+  if (!lista.length){ itens.innerHTML = '<div class="vazio">Nenhum projeto com esses filtros. Tente outro termo ou limpe os filtros.</div>'; return; }
+  [...lista].sort((x, y) => dia(y.d.at(-1)) - dia(x.d.at(-1))).forEach(p => {
+    const e = etapaDe(p.etapa), dias = diasDe(p);
+    const art = document.createElement('article');
+    art.className = 'pl';
+    const etapas = ['protocolado','comissao','plenario', p.etapa === 'arquivado' ? 'arquivado' : 'aprovado'];
+    const eventos = p.d.map((data, i) => `<li><time datetime="${data}">${fmt(data)}</time>${EVENTO[i === p.d.length - 1 && p.etapa === 'arquivado' ? 'arquivado' : etapas[i]]}</li>`).join('');
+    art.innerHTML = `
+      <button type="button" aria-expanded="false">
+        <span class="num">PL ${p.n}</span>
+        <span class="tit">${p.t}<small>${p.tema}</small></span>
+        <span class="autor">${p.autor}</span>
+        <span class="etapa-c"><span class="etapa"><i style="background:${e.cor}"></i>${e.nome}</span></span>
+        <span class="dias">${dias} dias</span>
+      </button>
+      <div class="detalhe">
+        <div><h3>O que muda</h3><div class="resumo"><span class="selo">Resumo gerado por IA (simulado)</span><p>${p.r}</p></div></div>
+        <div><h3>Tramitação</h3><ol class="linha-tempo">${eventos}</ol></div>
+      </div>`;
+    const btn = art.querySelector('button');
+    btn.addEventListener('click', () => { const ab = art.classList.toggle('aberto'); btn.setAttribute('aria-expanded', ab); });
+    itens.appendChild(art);
+  });
+}
+
+['f-busca','f-tema','f-etapa','f-autor'].forEach(id => $(id).addEventListener('input', render));
+$('limpar').addEventListener('click', () => { ['f-busca','f-tema','f-etapa','f-autor'].forEach(id => $(id).value = ''); render(); });
+render();
+</script>
+</body>
+</html>
